@@ -58,6 +58,10 @@ class GameScene: SKScene {
             n.strokeColor = SKColor.blue
             self.addChild(n)
         }
+        
+        if let celta = childNode(withName: "celta") {
+            celta.position = CGPoint(x: pos.x, y: pos.y)
+        }
     }
     
     func touchUp(atPoint pos : CGPoint) {
