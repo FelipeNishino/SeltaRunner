@@ -6,8 +6,20 @@
 //  Copyright © 2020 Grupo14. All rights reserved.
 //
 
+
+let kMinDistance = 25
+let kMinDuration = 0.1
+let kMinSpeed = 100
+let kMaxSpeed = 7000
+let lanesPosX : [CGFloat] = [-320, 0, 320]
+
 import SpriteKit
 import GameplayKit
+
+enum Direction {
+    case left
+    case right
+}
 
 class GameScene: SKScene {
     
@@ -17,9 +29,13 @@ class GameScene: SKScene {
     private var lastUpdateTime : TimeInterval = 0
     private var label : SKLabelNode?
     private var spinnyNode : SKShapeNode?
+    private var start : CGPoint?
+    private var startTime : TimeInterval?
+    private var currentLane : Int = 1
+    private var queuedLaneChange : Bool = false
     
     override func sceneDidLoad() {
-
+        
         self.lastUpdateTime = 0
         
         // Get label node from scene and store it for use later
@@ -27,6 +43,10 @@ class GameScene: SKScene {
         if let label = self.label {
             label.alpha = 0.0
             label.run(SKAction.fadeIn(withDuration: 2.0))
+        }
+        
+        if let selta = childNode(withName: "selta") {
+            selta.position.x = lanesPosX[currentLane]
         }
         
         // Create shape node to use during mouse interaction
@@ -43,6 +63,24 @@ class GameScene: SKScene {
         }
     }
     
+    func flick(dir: Direction) {
+        print("entered flick")
+        
+        switch (dir) {
+        case .left:
+            if currentLane > 0 {
+                currentLane -= 1
+                queuedLaneChange = true
+            }
+        case .right:
+            if currentLane < 2 {
+                currentLane += 1
+                queuedLaneChange = true
+            }
+        }
+        print(currentLane)
+        
+    }
     
     func touchDown(atPoint pos : CGPoint) {
         if let n = self.spinnyNode?.copy() as! SKShapeNode? {
@@ -77,6 +115,16 @@ class GameScene: SKScene {
             label.run(SKAction.init(named: "Pulse")!, withKey: "fadeInOut")
         }
         
+        /* Avoid multi-touch gestures (optional) */
+        if touches.count > 1 {
+            return;
+        }
+        
+        // Save start location and time
+        start = touches.first?.location(in: self);
+        startTime = touches.first?.timestamp;
+        
+        
         for t in touches { self.touchDown(atPoint: t.location(in: self)) }
     }
     
@@ -85,6 +133,38 @@ class GameScene: SKScene {
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        
+        // Determine distance from the starting point
+        var dx = CGFloat((touches.first?.location(in: self).x)! - start!.x);
+        var dy = CGFloat((touches.first?.location(in: self).y)! - start!.y);
+        
+        let magnitude = CGFloat(sqrt(dx*dx+dy*dy));
+        
+        if magnitude >= CGFloat(kMinDistance) {
+            // Determine time difference from start of the gesture
+            let dt = CGFloat(touches.first!.timestamp - startTime!);
+            if (dt > CGFloat(kMinDuration)) {
+                // Determine gesture speed in points/sec
+                let speed = magnitude / dt;
+                if speed >= CGFloat(kMinSpeed) && speed <= CGFloat(kMaxSpeed) {
+                    // Calculate normalized direction of the swipe
+                    dx = dx / magnitude;
+                    dy = dy / magnitude;
+                    print("Swipe detected with speed = \(speed) and direction (\(dx), \(dy)")
+                    flick(dir: (dx > 0 ? Direction.right : Direction.left))
+                }
+                else {
+                    print("Invalid speed, \(speed)")
+                }
+            }
+            else {
+                print("Insufficient duration")
+            }
+        }
+        else {
+            print("Insufficient magnitude")
+        }
+        
         for t in touches { self.touchUp(atPoint: t.location(in: self)) }
     }
     
@@ -107,6 +187,13 @@ class GameScene: SKScene {
         // Update entities
         for entity in self.entities {
             entity.update(deltaTime: dt)
+        }
+        if let selta = childNode(withName: "selta") {
+            if queuedLaneChange {
+                print("laneChange")
+                selta.position.x = lanesPosX[currentLane]
+                queuedLaneChange = false
+            }
         }
         
         self.lastUpdateTime = currentTime
