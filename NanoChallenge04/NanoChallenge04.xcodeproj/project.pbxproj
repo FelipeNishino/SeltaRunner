@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8B293CC42488265700A901E7 /* Dados.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B293CC32488265700A901E7 /* Dados.swift */; };
 		E20F50A12486F4210084D71E /* MenuScene.sks in Resources */ = {isa = PBXBuildFile; fileRef = E20F50A02486F4210084D71E /* MenuScene.sks */; };
 		E20F50A32486F44B0084D71E /* MenuScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20F50A22486F44B0084D71E /* MenuScene.swift */; };
 		E2CE75A32485845200847152 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2CE75A22485845200847152 /* AppDelegate.swift */; };
@@ -39,6 +40,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		8B293CC32488265700A901E7 /* Dados.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dados.swift; sourceTree = "<group>"; };
 		E20F50A02486F4210084D71E /* MenuScene.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = MenuScene.sks; sourceTree = "<group>"; };
 		E20F50A22486F44B0084D71E /* MenuScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuScene.swift; sourceTree = "<group>"; };
 		E2CE759F2485845200847152 /* NanoChallenge04.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NanoChallenge04.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -118,6 +120,7 @@
 				E2CE75B42485845400847152 /* Info.plist */,
 				E20F50A02486F4210084D71E /* MenuScene.sks */,
 				E20F50A22486F44B0084D71E /* MenuScene.swift */,
+				8B293CC32488265700A901E7 /* Dados.swift */,
 			);
 			path = NanoChallenge04;
 			sourceTree = "<group>";
@@ -278,6 +281,7 @@
 				E20F50A32486F44B0084D71E /* MenuScene.swift in Sources */,
 				E2CE75AB2485845200847152 /* GameViewController.swift in Sources */,
 				E2CE75A32485845200847152 /* AppDelegate.swift in Sources */,
+				8B293CC42488265700A901E7 /* Dados.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
