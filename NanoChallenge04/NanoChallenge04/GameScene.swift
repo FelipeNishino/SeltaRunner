@@ -51,10 +51,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         self.lastUpdateTime = 0
         
-        if let selta = childNode(withName: "selta") {
-            selta.position.x = laneXCoord[currentLane]
-        }
-        
         // Create shape node to use during mouse interaction
         let w = (self.size.width + self.size.height) * 0.05
         self.spinnyNode = SKShapeNode.init(rectOf: CGSize.init(width: w, height: w), cornerRadius: w * 0.3)
@@ -63,12 +59,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             spinnyNode.lineWidth = 2.5
             
             spinnyNode.run(SKAction.repeatForever(SKAction.rotate(byAngle: CGFloat(Double.pi), duration: 1)))
-            spinnyNode.run(SKAction.sequence([SKAction.wait(forDuration: 0.5),
-                                              SKAction.fadeOut(withDuration: 0.5),
-                                              SKAction.removeFromParent()]))
+            spinnyNode.run(SKAction.sequence([
+                SKAction.wait(forDuration: 0.5),
+                SKAction.fadeOut(withDuration: 0.5),
+                SKAction.removeFromParent()
+            ]))
         }
         
         if let selta = childNode(withName: "selta") {
+            selta.position.x = laneXCoord[currentLane]
             selta.physicsBody?.categoryBitMask = CollisionType.player.rawValue
             selta.physicsBody?.contactTestBitMask = CollisionType.obstacle.rawValue
             selta.physicsBody?.collisionBitMask = 0
@@ -81,35 +80,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         addChild(lblMarcha)
         
         physicsWorld.contactDelegate = self
-    }
-    
-    func spawnObstacle() {
-        var generatedNumbers = Set<Int>()
-        let quantity = Int.random(in: 0...1)
-        var lane : Int = -1
-        
-        generatedNumbers.insert(lane)
-        
-        for _ in 0...quantity {
-            let obstacle = SKSpriteNode.init(color: .green, size: CGSize.init(width: 80, height: 80))
-            
-            while generatedNumbers.contains(lane) {
-                lane = Int.random(in: 0...2)
-            }
-            
-            obstacle.name = "obstacle"
-            obstacle.physicsBody = .init(rectangleOf: CGSize.init(width: 80, height: 80), center: CGPoint(x: 0.5, y: 0.5))
-            
-            
-            obstacle.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-            obstacle.position.x = laneXCoord[lane]
-            obstacle.position.y = 1280
-            obstacle.physicsBody?.categoryBitMask = CollisionType.obstacle.rawValue
-            obstacle.physicsBody?.contactTestBitMask = CollisionType.player.rawValue
-            obstacle.physicsBody?.collisionBitMask = 0
-            generatedNumbers.insert(lane)
-            addChild(obstacle)
-        }
     }
     
     func resetGameParameters() {
@@ -130,23 +100,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     
-    func flick(dir: Direction) {
-        print("entered flick")
-        
-        switch (dir) {
-        case .left:
-            if currentLane > 0 {
-                currentLane -= 1
-                queuedLaneChange = true
-            }
-        case .right:
-            if currentLane < 2 {
-                currentLane += 1
-                queuedLaneChange = true
-            }
-        }
-        print(currentLane)
-    }
+
     
     func didBegin(_ contact: SKPhysicsContact) {
         let nodeA = contact.bodyA.node
@@ -183,10 +137,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             n.position = pos
             n.strokeColor = SKColor.green
             self.addChild(n)
-        }
-        
-        if pos.y > 640 {
-            spawnObstacle()
         }
     }
     
@@ -235,7 +185,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Determine distance from the starting point
         if isAlive {
             
-            
             var dx = CGFloat((touches.first?.location(in: self).x)! - start!.x);
             var dy = CGFloat((touches.first?.location(in: self).y)! - start!.y);
             
@@ -274,7 +223,52 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         for t in touches { self.touchUp(atPoint: t.location(in: self)) }
     }
     
+    func flick(dir: Direction) {
+        print("entered flick")
+        
+        switch (dir) {
+        case .left:
+            if currentLane > 0 {
+                currentLane -= 1
+                queuedLaneChange = true
+            }
+        case .right:
+            if currentLane < 2 {
+                currentLane += 1
+                queuedLaneChange = true
+            }
+        }
+        print(currentLane)
+    }
     
+    func spawnObstacle() {
+        var generatedNumbers = Set<Int>()
+        let quantity = Int.random(in: 0...1)
+        var lane : Int = -1
+        
+        generatedNumbers.insert(lane)
+        
+        for _ in 0...quantity {
+            let obstacle = SKSpriteNode.init(color: .green, size: CGSize.init(width: 80, height: 80))
+            
+            while generatedNumbers.contains(lane) {
+                lane = Int.random(in: 0...2)
+            }
+            
+            obstacle.name = "obstacle"
+            obstacle.physicsBody = .init(rectangleOf: CGSize.init(width: 80, height: 80), center: CGPoint(x: 0.5, y: 0.5))
+            
+            
+            obstacle.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+            obstacle.position.x = laneXCoord[lane]
+            obstacle.position.y = 1280
+            obstacle.physicsBody?.categoryBitMask = CollisionType.obstacle.rawValue
+            obstacle.physicsBody?.contactTestBitMask = CollisionType.player.rawValue
+            obstacle.physicsBody?.collisionBitMask = 0
+            generatedNumbers.insert(lane)
+            addChild(obstacle)
+        }
+    }
     override func update(_ currentTime: TimeInterval) {
         // Called before each frame is rendered
         

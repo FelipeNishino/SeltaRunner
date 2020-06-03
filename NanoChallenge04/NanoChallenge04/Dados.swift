@@ -15,12 +15,7 @@ class Dados {
     public var Creditos: Int?
     public var Recorde: Int?
     public var Upgrade: Int?
-    
-    
-    init() {
-        
-    }
-    
+     
     public func carregarDados(){
         let dadosCarregar : [String:String] = UserDefaults.standard.dictionary(forKey: "Dados") as! [String : String]
         
