@@ -11,10 +11,17 @@ let kMinDistance = 25
 let kMinDuration = 0.1
 let kMinSpeed = 100
 let kMaxSpeed = 7000
-let laneXCoord : [CGFloat] = Array(stride(from: -320, through: 320, by: 320))
+let laneXCoord : [CGFloat] = [-360, 14, 395]
 let initialSpeed : CGFloat = 8
-let initialObstacleFrequency : Double = 1
+let initialObstacleFrequency : Double = 1.5
 let initialSpeedUpFrequency : Double = 15
+let obstaclePathPoints : [[CGPoint]] =
+    [
+        [CGPoint(x: -20, y: -71), CGPoint(x: 20, y: -71), CGPoint(x: 50, y: -71)],
+        [CGPoint(x: -360, y: -1400), CGPoint(x: 14, y: -1400), CGPoint(x: 395, y: -1400)]
+    ]
+let dyMax = obstaclePathPoints[1][0].y - obstaclePathPoints[0][0].y
+
 
 import SpriteKit
 import GameplayKit
@@ -34,6 +41,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var entities = [GKEntity]()
     var graphs = [String : GKGraph]()
     
+
     private var lastSpawnTime : TimeInterval = 0
     private var lastUpdateTime : TimeInterval = 0
     private var lastSpeedUp : TimeInterval = 0
@@ -255,20 +263,44 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 lane = Int.random(in: 0...2)
             }
             
-            obstacle.name = "obstacle"
-            obstacle.physicsBody = .init(rectangleOf: CGSize.init(width: 80, height: 80), center: CGPoint(x: 0.5, y: 0.5))
+            let path = UIBezierPath()
             
+            path.move(to: obstaclePathPoints[0][lane])
+            path.addLine(to: obstaclePathPoints[1][lane])
+            
+            obstacle.name = "obstacle"
+            obstacle.physicsBody = .init(rectangleOf: CGSize.init(width: 150, height: 150), center: CGPoint(x: 0.5, y: 0.5))
             
             obstacle.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-            obstacle.position.x = laneXCoord[lane]
-            obstacle.position.y = 1280
+//            obstacle.position.x = laneXCoord[lane]
+//            obstacle.position.y = 1280
+            obstacle.zPosition = 1
             obstacle.physicsBody?.categoryBitMask = CollisionType.obstacle.rawValue
             obstacle.physicsBody?.contactTestBitMask = CollisionType.player.rawValue
             obstacle.physicsBody?.collisionBitMask = 0
+            
+            obstacle.physicsBody?.affectedByGravity = false
             generatedNumbers.insert(lane)
             addChild(obstacle)
+            
+            let movement = SKAction.follow(path.cgPath, asOffset: true, orientToPath: false, speed: 500)
+            let sequence = SKAction.sequence([movement, .removeFromParent()])
+            obstacle.run(sequence)
         }
     }
+    
+    func configureMovement(_ moveStraight: Bool) {
+        let path = UIBezierPath()
+
+        path.move(to: .zero)
+
+        path.addLine(to: CGPoint(x: -10000, y: 0))
+
+        let movement = SKAction.follow(path.cgPath, asOffset: true, orientToPath: true, speed: obstacleSpeed)
+        let sequence = SKAction.sequence([movement, .removeFromParent()])
+        run(sequence)
+    }
+    
     override func update(_ currentTime: TimeInterval) {
         // Called before each frame is rendered
         
@@ -295,17 +327,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     lblMarcha.run(SKAction(named: "Marcha")!)
                 }
             }
+            
         }
         
         enumerateChildNodes(withName: "obstacle") {
             node, _ in
             
-            if node.position.y < -1120 || !self.isAlive {
+            if !self.isAlive {
                 node.removeFromParent()
             }
-            else {
-                node.position.y -= self.obstacleSpeed
-            }
+            print("node: \(node.position.y)")
+            print("constant: \(obstaclePathPoints[0][0].y)")
+            let dyObstacle = node.position.y - obstaclePathPoints[0][0].y
+            print("dy: \(dyObstacle)")
+            print("dyMax: \(dyMax)")
+            var scale = dyObstacle / dyMax
+            print(scale)
+            scale = scale * 2
+            node.setScale(scale)
         }
         
         // Update entities
