@@ -11,7 +11,10 @@ let kMinDistance = 25
 let kMinDuration = 0.1
 let kMinSpeed = 100
 let kMaxSpeed = 7000
-let lanesPosX : [CGFloat] = Array(stride(from: -320, through: 320, by: 320))
+let laneXCoord : [CGFloat] = Array(stride(from: -320, through: 320, by: 320))
+let initialSpeed : CGFloat = 8
+let initialObstacleFrequency : Double = 1
+let initialSpeedUpFrequency : Double = 15
 
 import SpriteKit
 import GameplayKit
@@ -33,19 +36,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     private var lastSpawnTime : TimeInterval = 0
     private var lastUpdateTime : TimeInterval = 0
+    private var lastSpeedUp : TimeInterval = 0
     private var spinnyNode : SKShapeNode?
     private var start : CGPoint?
     private var startTime : TimeInterval?
     private var currentLane : Int = 1
     private var queuedLaneChange : Bool = false
     private var isAlive : Bool = true
+    private var obstacleSpeed = initialSpeed
+    private var obstacleFrequency = initialObstacleFrequency
+    private var speedUpFrequency = initialSpeedUpFrequency
     
     override func sceneDidLoad() {
         
         self.lastUpdateTime = 0
         
         if let selta = childNode(withName: "selta") {
-            selta.position.x = lanesPosX[currentLane]
+            selta.position.x = laneXCoord[currentLane]
         }
         
         // Create shape node to use during mouse interaction
@@ -67,8 +74,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             selta.physicsBody?.collisionBitMask = 0
         }
         
-        physicsWorld.contactDelegate = self
+        let lblMarcha = SKLabelNode(text: "Mete marcha!")
+        lblMarcha.position = CGPoint(x: frame.midX, y: frame.midY + frame.midY / 2)
+        lblMarcha.name = "lblMarcha"
+        lblMarcha.fontSize = 100
+        addChild(lblMarcha)
         
+        physicsWorld.contactDelegate = self
     }
     
     func spawnObstacle() {
@@ -90,13 +102,31 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             
             obstacle.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-            obstacle.position.x = lanesPosX[lane]
+            obstacle.position.x = laneXCoord[lane]
             obstacle.position.y = 1280
             obstacle.physicsBody?.categoryBitMask = CollisionType.obstacle.rawValue
             obstacle.physicsBody?.contactTestBitMask = CollisionType.player.rawValue
             obstacle.physicsBody?.collisionBitMask = 0
             generatedNumbers.insert(lane)
             addChild(obstacle)
+        }
+    }
+    
+    func resetGameParameters() {
+        obstacleSpeed = initialSpeed
+        isAlive = true
+        queuedLaneChange = false
+        lastSpawnTime = 0
+        lastUpdateTime = 0
+        lastSpeedUp = 0
+        currentLane = 1
+        
+        if let selta = childNode(withName: "selta") {
+            selta.run(SKAction.rotate(toAngle: 0, duration: 0))
+            selta.position.x = laneXCoord[currentLane]
+        }
+        if let lblLost = childNode(withName: "lblLost") {
+            lblLost.removeFromParent()
         }
     }
     
@@ -116,7 +146,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
         print(currentLane)
-        
     }
     
     func didBegin(_ contact: SKPhysicsContact) {
@@ -130,7 +159,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             nodeB?.removeFromParent()
         }
         
-        let lblLost = SKLabelNode(text: "Ihhhh caraio capotou o selta")
+        let lblLost = SKLabelNode(text: "Ihhhh capotou o selta")
         lblLost.position = CGPoint(x: frame.midX, y: frame.midY + 100)
         lblLost.name = "lblLost"
         lblLost.fontSize = 100
@@ -138,6 +167,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         let retryButton = SKSpriteNode(imageNamed: "play")
         retryButton.position = CGPoint(x: frame.midX, y: frame.midY)
+        retryButton.scale(to: CGSize(width: 200, height: 200))
         retryButton.name = "retry"
         self.addChild(retryButton)
         
@@ -187,21 +217,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         startTime = touches.first?.timestamp;
         
         if let retrybutton = childNode(withName: "retry") {
-            
-            let pos = touches.first?.location(in: self)
-            let node = self.atPoint(pos!)
+            let node = self.atPoint(start!)
             if node == retrybutton {
-                isAlive = true
-                if let selta = childNode(withName: "selta") {
-                    selta.run(SKAction.rotate(toAngle: 0, duration: 0))
-                }
-                if let lblLost = childNode(withName: "lblLost") {
-                    lblLost.removeFromParent()
-                }
+                resetGameParameters()
                 retrybutton.removeFromParent()
             }
         }
-        
         for t in touches { self.touchDown(atPoint: t.location(in: self)) }
     }
     
@@ -212,34 +233,38 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         
         // Determine distance from the starting point
-        var dx = CGFloat((touches.first?.location(in: self).x)! - start!.x);
-        var dy = CGFloat((touches.first?.location(in: self).y)! - start!.y);
-        
-        let magnitude = CGFloat(sqrt(dx*dx+dy*dy));
-        
-        if magnitude >= CGFloat(kMinDistance) {
-            // Determine time difference from start of the gesture
-            let dt = CGFloat(touches.first!.timestamp - startTime!);
-            if (dt > CGFloat(kMinDuration)) {
-                // Determine gesture speed in points/sec
-                let speed = magnitude / dt;
-                if speed >= CGFloat(kMinSpeed) && speed <= CGFloat(kMaxSpeed) {
-                    // Calculate normalized direction of the swipe
-                    dx = dx / magnitude;
-                    dy = dy / magnitude;
-                    print("Swipe detected with speed = \(speed) and direction (\(dx), \(dy)")
-                    flick(dir: (dx > 0 ? Direction.right : Direction.left))
+        if isAlive {
+            
+            
+            var dx = CGFloat((touches.first?.location(in: self).x)! - start!.x);
+            var dy = CGFloat((touches.first?.location(in: self).y)! - start!.y);
+            
+            let magnitude = CGFloat(sqrt(dx*dx+dy*dy));
+            
+            if magnitude >= CGFloat(kMinDistance) {
+                // Determine time difference from start of the gesture
+                let dt = CGFloat(touches.first!.timestamp - startTime!);
+                if (dt > CGFloat(kMinDuration)) {
+                    // Determine gesture speed in points/sec
+                    let speed = magnitude / dt;
+                    if speed >= CGFloat(kMinSpeed) && speed <= CGFloat(kMaxSpeed) {
+                        // Calculate normalized direction of the swipe
+                        dx = dx / magnitude;
+                        dy = dy / magnitude;
+                        print("Swipe detected with speed = \(speed) and direction (\(dx), \(dy)")
+                        flick(dir: (dx > 0 ? Direction.right : Direction.left))
+                    }
+                    else {
+                        print("Invalid speed, \(speed)")
+                    }
                 }
                 else {
-                    print("Invalid speed, \(speed)")
+                    print("Insufficient duration")
                 }
             }
             else {
-                print("Insufficient duration")
+                print("Insufficient magnitude")
             }
-        }
-        else {
-            print("Insufficient magnitude")
         }
         
         for t in touches { self.touchUp(atPoint: t.location(in: self)) }
@@ -261,9 +286,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Calculate time since last update
         let dt = currentTime - self.lastUpdateTime
         
-        if currentTime - lastSpawnTime > 1 && isAlive {
-            spawnObstacle()
-            lastSpawnTime = currentTime
+        if isAlive {
+            if currentTime - lastSpawnTime > obstacleFrequency {
+                spawnObstacle()
+                lastSpawnTime = currentTime
+            }
+            
+            if currentTime - lastSpeedUp > speedUpFrequency {
+                obstacleSpeed = obstacleSpeed * 1.25
+                lastSpeedUp = currentTime
+                print("METE MARCHA")
+                
+                if let lblMarcha = childNode(withName: "lblMarcha") {
+                    lblMarcha.run(SKAction(named: "Marcha")!)
+                }
+            }
         }
         
         enumerateChildNodes(withName: "obstacle") {
@@ -273,7 +310,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 node.removeFromParent()
             }
             else {
-                node.position.y -= 10
+                node.position.y -= self.obstacleSpeed
             }
         }
         
@@ -281,10 +318,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         for entity in self.entities {
             entity.update(deltaTime: dt)
         }
+        
         if let selta = childNode(withName: "selta") {
             if queuedLaneChange {
                 print("laneChange")
-                selta.position.x = lanesPosX[currentLane]
+                selta.position.x = laneXCoord[currentLane]
                 queuedLaneChange = false
             }
         }
