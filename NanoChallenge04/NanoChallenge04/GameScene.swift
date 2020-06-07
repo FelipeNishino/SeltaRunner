@@ -60,22 +60,41 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private var obstacleFrequency = initialObstacleFrequency
     private var speedUpFrequency = initialSpeedUpFrequency
     private var obstacleCooldown : Bool = false
+    private var startCountdown : Int = 3
+    private var countdownTime : TimeInterval = 0
+    private var playTime : TimeInterval = 0
+    private var dados = Dados()
+    private var fontColor = UIColor.black
     
     override func sceneDidLoad() {
-                
+        
         if let selta = childNode(withName: "selta") {
             selta.position.x = laneXCoord[currentLane]
             selta.physicsBody?.categoryBitMask = CollisionType.player.rawValue
             selta.physicsBody?.contactTestBitMask = CollisionType.obstacle.rawValue
             selta.physicsBody?.collisionBitMask = 0
         }
+        dados.carregarDados()
         
         let lblMarcha = SKLabelNode(text: "Mete marcha!")
-        lblMarcha.position = CGPoint(x: frame.midX, y: frame.midY + frame.midY / 2)
+        lblMarcha.position = CGPoint(x: 0, y: 130)
+        lblMarcha.zPosition = 12
         lblMarcha.name = "lblMarcha"
         lblMarcha.fontSize = 100
-        lblMarcha.run(SKAction.hide())
+        lblMarcha.fontName = "Skia-Bold"
+        lblMarcha.fontColor = fontColor
+        lblMarcha.run(SKAction.fadeOut(withDuration: 0))
         addChild(lblMarcha)
+        
+        let lblStart = SKLabelNode(text: "3")
+        lblStart.position = CGPoint(x: 0, y: 100)
+        lblStart.zPosition = 11
+        lblStart.name = "lblStart"
+        lblStart.fontSize = 100
+        lblStart.fontName = "Skia-Bold"
+        lblStart.fontColor = fontColor
+        lblStart.run(SKAction(named: "Countdown")!)
+        addChild(lblStart)
         
         let background = SKSpriteNode(texture: SKTexture(imageNamed: "dia"))
         background.position = CGPoint(x: 0, y: self.size.height / 4)
@@ -84,6 +103,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         if  18 <= hour || hour < 6 {
             background.texture = SKTexture(imageNamed: "noite")
+            fontColor = .white
         }
         
         addChild(background)
@@ -99,6 +119,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         lastUpdateTime = 0
         lastSpeedUp = 0
         currentLane = 1
+        startCountdown = 3
         
         if let selta = childNode(withName: "selta") {
             selta.run(SKAction.rotate(toAngle: 0, duration: 0))
@@ -120,9 +141,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             node.removeFromParent()
         }
+        
+        if let lblTime = childNode(withName: "lblTime") as? SKLabelNode {
+            lblTime.removeFromParent()
+        }
+        
+        if let lblStart = childNode(withName: "lblStart") as? SKLabelNode {
+            lblStart.text = "3"
+            lblStart.run(SKAction(named: "Countdown")!)
+        }
+        
+        if let lblRecorde = childNode(withName: "lblRecorde") as? SKLabelNode {
+            lblRecorde.removeFromParent()
+        }
     }
-    
-    
     
     func didBegin(_ contact: SKPhysicsContact) {
         let nodeA = contact.bodyA.node
@@ -139,6 +171,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         lblLost.position = CGPoint(x: frame.midX, y: frame.midY + 100)
         lblLost.name = "lblLost"
         lblLost.fontSize = 100
+        lblLost.fontColor = fontColor
         addChild(lblLost)
         
         let retryButton = SKSpriteNode(imageNamed: "play")
@@ -151,6 +184,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if let selta = childNode(withName: "selta") {
             selta.run(SKAction.rotate(toAngle: .pi*3/4 + CGFloat(currentLane) * .pi/4, duration: 0))
         }
+        
+         if let lblTime = childNode(withName: "lblTime") as? SKLabelNode {
+            if playTime > dados.Recorde! {
+                dados.Recorde = Double(lblTime.text!)
+                dados.salvarDados()
+            }
+        }
+        
+        let lblRecorde = SKLabelNode(fontNamed: "Skia-Bold")
+        lblRecorde.text = "Recorde: " + String(format: "%.2f", dados.Recorde!)
+        lblRecorde.name = "lblRecorde"
+        lblRecorde.fontSize = 100
+        lblRecorde.fontColor = fontColor
+        lblRecorde.zPosition = 11
+        lblRecorde.position = CGPoint(x: 0, y: 580)
+        addChild(lblRecorde)
+        
     }
     
     func touchDown(atPoint pos : CGPoint) {
@@ -189,7 +239,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         
         // Determine distance from the starting point
-        if isAlive {
+        if isAlive && startCountdown == 0{
             
             var dx = CGFloat((touches.first?.location(in: self).x)! - start!.x);
             var dy = CGFloat((touches.first?.location(in: self).y)! - start!.y);
@@ -345,18 +395,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         rightLane.run(rightSequence)
     }
     
-    func configureMovement(_ moveStraight: Bool) {
-        let path = UIBezierPath()
-        
-        path.move(to: .zero)
-        
-        path.addLine(to: CGPoint(x: -10000, y: 0))
-        
-        let movement = SKAction.follow(path.cgPath, asOffset: true, orientToPath: true, speed: obstacleSpeed)
-        let sequence = SKAction.sequence([movement, .removeFromParent()])
-        run(sequence)
-    }
-    
     func updateNodeScale(nodeType: NodeType) {
         var name = String()
         var dyObstacle = CGFloat()
@@ -373,7 +411,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         enumerateChildNodes(withName: name) {
             node, _ in
-                                    
+            
             if name == "obstacle" {
                 if !self.isAlive {
                     node.removeFromParent()
@@ -384,6 +422,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 scale = scale * 2
             }
             else {
+                if !self.isAlive {
+                    node.removeAllActions()
+                }
+                
                 dyObstacle = node.position.y - -30
                 scale = dyObstacle / (-1458 - -30)
             }
@@ -399,23 +441,31 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if self.lastUpdateTime == 0 {
             self.lastUpdateTime = currentTime + 2
             self.lastSpeedUp = lastUpdateTime
+            self.countdownTime = currentTime
         }
         
         // Calculate time since last update
         let dt = currentTime - self.lastUpdateTime
         
         if isAlive {
+            playTime = currentTime - countdownTime
+
+            if let lblTime = childNode(withName: "lblTime") as? SKLabelNode {
+                lblTime.text = String(format: "%.2f", playTime)
+            }
+            
             if currentTime - lastLaneSpawnTime > obstacleFrequency / 4 {
                 spawnLaneNodes()
                 lastLaneSpawnTime = currentTime
             }
+            
             if !obstacleCooldown {
                 
                 if currentTime - lastObstacleSpawnTime > obstacleFrequency {
                     spawnObstacle()
                     lastObstacleSpawnTime = currentTime
                 }
-                                
+                
                 if currentTime - lastSpeedUp > speedUpFrequency {
                     obstacleSpeed = obstacleSpeed * 1.15
                     lastSpeedUp = currentTime
@@ -429,6 +479,31 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
         
+        if currentTime - countdownTime > 1 && startCountdown != 0 {
+         
+            countdownTime = currentTime
+            startCountdown -= 1
+            
+            if let lblStart = childNode(withName: "lblStart") as? SKLabelNode {
+                switch startCountdown {
+                case 2:
+                    lblStart.text = "2"
+                case 1:
+                    lblStart.text = "1"
+                default:
+                    lblStart.text = "Acelera!"
+                    let lblTime = SKLabelNode(text: "0")
+                    lblTime.position = CGPoint(x: 0, y: 480)
+                    lblTime.zPosition = 11
+                    lblTime.fontSize = 100
+                    lblTime.fontName = "Skia-Bold"
+                    lblTime.fontColor = fontColor
+                    lblTime.name = "lblTime"
+                    addChild(lblTime)
+                }
+            }
+            
+        }
         if currentTime - lastObstacleSpawnTime > 2.5 {
             obstacleCooldown = false
         }

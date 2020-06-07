@@ -13,14 +13,14 @@ import Foundation
 class Dados {
     
     public var Creditos: Int?
-    public var Recorde: Int?
+    public var Recorde: Double?
     public var Upgrade: Int?
      
     public func carregarDados(){
         let dadosCarregar : [String:String] = UserDefaults.standard.dictionary(forKey: "Dados") as! [String : String]
         
         self.Creditos = Int(dadosCarregar["Creditos"]!)
-        self.Recorde  = Int(dadosCarregar["Recorde"]!)
+        self.Recorde  = Double(dadosCarregar["Recorde"]!)
         self.Upgrade  = Int(dadosCarregar["Upgrade"]!)
     }
     
