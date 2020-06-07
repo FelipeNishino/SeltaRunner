@@ -20,6 +20,7 @@ class MenuScene: SKScene {
         
         let background = SKSpriteNode(texture: SKTexture(imageNamed: "dia"))
         background.zPosition = 0
+        background.position = CGPoint(x: 0, y: self.size.height / 4)
         if 18 <= hour || hour < 6{
             background.texture = SKTexture(imageNamed: "noite")
         }
