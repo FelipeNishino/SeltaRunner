@@ -12,13 +12,13 @@ let kMinDuration = 0.1
 let kMinSpeed = 100
 let kMaxSpeed = 7000
 let laneXCoord : [CGFloat] = [-360, 14, 395]
-let initialSpeed : CGFloat = 8
+let initialSpeed : CGFloat = 250
 let initialObstacleFrequency : Double = 1.5
 let initialSpeedUpFrequency : Double = 15
 let obstaclePathPoints : [[CGPoint]] =
     [
-        [CGPoint(x: -20, y: -71), CGPoint(x: 20, y: -71), CGPoint(x: 50, y: -71)],
-        [CGPoint(x: -360, y: -1400), CGPoint(x: 14, y: -1400), CGPoint(x: 395, y: -1400)]
+        [CGPoint(x: -10, y: -10), CGPoint(x: 10, y: -10), CGPoint(x: 30, y: -10)],
+        [CGPoint(x: -490, y: -1400), CGPoint(x: 10, y: -1400), CGPoint(x: 475, y: -1400)]
 ]
 let dyMax = obstaclePathPoints[1][0].y - obstaclePathPoints[0][0].y
 
@@ -31,9 +31,15 @@ enum Direction {
     case right
 }
 
-enum CollisionType: UInt32 {
+enum CollisionType : UInt32 {
     case player = 1
     case obstacle = 2
+}
+
+enum NodeType {
+    case obstacle
+    case leftLane
+    case rightLane
 }
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
@@ -45,7 +51,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private var lastObstacleSpawnTime : TimeInterval = 0
     private var lastUpdateTime : TimeInterval = 0
     private var lastSpeedUp : TimeInterval = 0
-    private var spinnyNode : SKShapeNode?
     private var start : CGPoint?
     private var startTime : TimeInterval?
     private var currentLane : Int = 1
@@ -54,26 +59,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private var obstacleSpeed = initialSpeed
     private var obstacleFrequency = initialObstacleFrequency
     private var speedUpFrequency = initialSpeedUpFrequency
+    private var obstacleCooldown : Bool = false
     
     override func sceneDidLoad() {
-        
-        self.lastUpdateTime = 0
-        
-        // Create shape node to use during mouse interaction
-        let w = (self.size.width + self.size.height) * 0.05
-        self.spinnyNode = SKShapeNode.init(rectOf: CGSize.init(width: w, height: w), cornerRadius: w * 0.3)
-        
-        if let spinnyNode = self.spinnyNode {
-            spinnyNode.lineWidth = 2.5
-            
-            spinnyNode.run(SKAction.repeatForever(SKAction.rotate(byAngle: CGFloat(Double.pi), duration: 1)))
-            spinnyNode.run(SKAction.sequence([
-                SKAction.wait(forDuration: 0.5),
-                SKAction.fadeOut(withDuration: 0.5),
-                SKAction.removeFromParent()
-            ]))
-        }
-        
+                
         if let selta = childNode(withName: "selta") {
             selta.position.x = laneXCoord[currentLane]
             selta.physicsBody?.categoryBitMask = CollisionType.player.rawValue
@@ -85,10 +74,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         lblMarcha.position = CGPoint(x: frame.midX, y: frame.midY + frame.midY / 2)
         lblMarcha.name = "lblMarcha"
         lblMarcha.fontSize = 100
+        lblMarcha.run(SKAction.hide())
         addChild(lblMarcha)
         
         let background = SKSpriteNode(texture: SKTexture(imageNamed: "dia"))
         background.position = CGPoint(x: 0, y: self.size.height / 4)
+        background.zPosition = 10
         let hour = Calendar.current.component(.hour, from: Date())
         
         if  18 <= hour || hour < 6 {
@@ -124,7 +115,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             node.removeFromParent()
         }
         
-        enumerateChildNodes(withName: "rigthLane") {
+        enumerateChildNodes(withName: "rightLane") {
             node, _ in
             
             node.removeFromParent()
@@ -156,7 +147,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         retryButton.zPosition = 999
         self.addChild(retryButton)
         
-        print("capotou")
         isAlive = false
         if let selta = childNode(withName: "selta") {
             selta.run(SKAction.rotate(toAngle: .pi*3/4 + CGFloat(currentLane) * .pi/4, duration: 0))
@@ -164,31 +154,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func touchDown(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.green
-            self.addChild(n)
-        }
-        
-        if pos.y > 600 {
-            spawnLaneNodes()
-        }
     }
     
     func touchMoved(toPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.blue
-            self.addChild(n)
-        }
     }
     
-    func touchUp(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.red
-            self.addChild(n)
-        }
+    func touchUp(atPoint pos : CGPoint) {   
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -235,7 +206,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                         // Calculate normalized direction of the swipe
                         dx = dx / magnitude;
                         dy = dy / magnitude;
-                        print("Swipe detected with speed = \(speed) and direction (\(dx), \(dy)")
+                        //                        print("Swipe detected with speed = \(speed) and direction (\(dx), \(dy)")
                         flick(dir: (dx > 0 ? Direction.right : Direction.left))
                     }
                     else {
@@ -259,7 +230,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func flick(dir: Direction) {
-        print("entered flick")
         
         switch (dir) {
         case .left:
@@ -273,21 +243,32 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 queuedLaneChange = true
             }
         }
-        print(currentLane)
     }
     
     func spawnObstacle() {
         var generatedNumbers = Set<Int>()
         let quantity = Int.random(in: 0...1)
         var lane : Int = -1
+        var image : Int = 0
         
         generatedNumbers.insert(lane)
         
         for _ in 0...quantity {
-            let obstacle = SKSpriteNode.init(color: .green, size: CGSize.init(width: 80, height: 80))
+            //            let obstacle = SKSpriteNode.init(color: .green, size: CGSize.init(width: 80, height: 80))
             
             while generatedNumbers.contains(lane) {
                 lane = Int.random(in: 0...2)
+            }
+            
+            image = Int.random(in: 0...1)
+            
+            var obstacle = SKSpriteNode()
+            
+            switch image {
+            case 1:
+                obstacle = SKSpriteNode(imageNamed: "cone")
+            default:
+                obstacle = SKSpriteNode(imageNamed: "pneu")
             }
             
             let obstaclePath = UIBezierPath()
@@ -296,6 +277,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             obstaclePath.addLine(to: obstaclePathPoints[1][lane])
             
             obstacle.name = "obstacle"
+            obstacle.size = CGSize(width: 1.5 * obstacle.size.width, height: 1.5 * obstacle.size.height)
             obstacle.physicsBody = .init(rectangleOf: CGSize.init(width: 100, height: 100), center: CGPoint(x: 0.5, y: 0.5))
             
             obstacle.anchorPoint = CGPoint(x: 0.5, y: 0.5)
@@ -304,12 +286,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             obstacle.physicsBody?.contactTestBitMask = CollisionType.player.rawValue
             obstacle.physicsBody?.collisionBitMask = 0
             
-            
             obstacle.physicsBody?.affectedByGravity = false
             generatedNumbers.insert(lane)
             addChild(obstacle)
             
-            let movement = SKAction.follow(obstaclePath.cgPath, asOffset: true, orientToPath: false, speed: 500)
+            let movement = SKAction.follow(obstaclePath.cgPath, asOffset: true, orientToPath: false, speed: obstacleSpeed)
             movement.timingMode = .easeIn
             movement.timingFunction = {
                 time in
@@ -339,10 +320,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let rightLane = SKSpriteNode(imageNamed: "retangulinho-invertido")
         rightLane.zPosition = 1
         rightLane.size = CGSize(width: 90, height: 229)
-        rightLane.name = "rigthLane"
+        rightLane.name = "rightLane"
         addChild(rightLane)
         
-        let leftMovement = SKAction.follow(leftPath.cgPath, asOffset: true, orientToPath: false, speed: 500)
+        let leftMovement = SKAction.follow(leftPath.cgPath, asOffset: true, orientToPath: false, speed: obstacleSpeed)
         leftMovement.timingMode = .easeIn
         leftMovement.timingFunction = {
             time in
@@ -351,7 +332,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         let leftSequence = SKAction.sequence([leftMovement, .removeFromParent()])
         
-        let rightMovement = SKAction.follow(rightPath.cgPath, asOffset: true, orientToPath: false, speed: 500)
+        let rightMovement = SKAction.follow(rightPath.cgPath, asOffset: true, orientToPath: false, speed: obstacleSpeed)
         rightMovement.timingMode = .easeIn
         rightMovement.timingFunction = {
             time in
@@ -376,93 +357,85 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         run(sequence)
     }
     
+    func updateNodeScale(nodeType: NodeType) {
+        var name = String()
+        var dyObstacle = CGFloat()
+        var scale = CGFloat()
+        
+        switch nodeType {
+        case .leftLane:
+            name = "leftLane"
+        case .rightLane:
+            name = "rightLane"
+        default:
+            name = "obstacle"
+        }
+        
+        enumerateChildNodes(withName: name) {
+            node, _ in
+                                    
+            if name == "obstacle" {
+                if !self.isAlive {
+                    node.removeFromParent()
+                }
+                
+                dyObstacle = node.position.y - obstaclePathPoints[0][0].y
+                scale = dyObstacle / dyMax
+                scale = scale * 2
+            }
+            else {
+                dyObstacle = node.position.y - -30
+                scale = dyObstacle / (-1458 - -30)
+            }
+            
+            node.setScale(scale)
+        }
+    }
+    
     override func update(_ currentTime: TimeInterval) {
         // Called before each frame is rendered
         
         // Initialize _lastUpdateTime if it has not already been
-        if (self.lastUpdateTime == 0) {
-            self.lastUpdateTime = currentTime
+        if self.lastUpdateTime == 0 {
+            self.lastUpdateTime = currentTime + 2
+            self.lastSpeedUp = lastUpdateTime
         }
         
         // Calculate time since last update
         let dt = currentTime - self.lastUpdateTime
         
         if isAlive {
-            if currentTime - lastObstacleSpawnTime > obstacleFrequency {
-                spawnObstacle()
-                lastObstacleSpawnTime = currentTime
-            }
-            
             if currentTime - lastLaneSpawnTime > obstacleFrequency / 4 {
                 spawnLaneNodes()
                 lastLaneSpawnTime = currentTime
             }
-            
-            if currentTime - lastSpeedUp > speedUpFrequency {
-                obstacleSpeed = obstacleSpeed * 1.25
-                lastSpeedUp = currentTime
-                print("METE MARCHA")
+            if !obstacleCooldown {
                 
-                if let lblMarcha = childNode(withName: "lblMarcha") {
-                    lblMarcha.run(SKAction(named: "Marcha")!)
+                if currentTime - lastObstacleSpawnTime > obstacleFrequency {
+                    spawnObstacle()
+                    lastObstacleSpawnTime = currentTime
+                }
+                                
+                if currentTime - lastSpeedUp > speedUpFrequency {
+                    obstacleSpeed = obstacleSpeed * 1.15
+                    lastSpeedUp = currentTime
+                    print("METE MARCHA")
+                    obstacleCooldown = true
+                    
+                    if let lblMarcha = childNode(withName: "lblMarcha") {
+                        lblMarcha.run(SKAction(named: "Marcha")!)
+                    }
                 }
             }
-            
         }
         
-        enumerateChildNodes(withName: "obstacle") {
-            node, _ in
-            
-            if !self.isAlive {
-                node.removeFromParent()
-            }
-            print("node: \(node.position.y)")
-            print("constant: \(obstaclePathPoints[0][0].y)")
-            let dyObstacle = node.position.y - obstaclePathPoints[0][0].y
-            print("dy: \(dyObstacle)")
-            print("dyMax: \(dyMax)")
-            let scale = dyObstacle / dyMax
-            print(scale)
-            //            scale = scale * 2
-            
-            node.setScale(scale)
+        if currentTime - lastObstacleSpawnTime > 2.5 {
+            obstacleCooldown = false
         }
         
-        enumerateChildNodes(withName: "leftLane") {
-            node, _ in
-            
-            
-            if !self.isAlive {
-                node.removeAllActions()
-            }
-            print("node: \(node.position.y)")
-            
-            let dyObstacle = node.position.y - -30
-            print("dy: \(dyObstacle)")
-            print("dyMax: \(-1458 - -30)")
-            let scale = dyObstacle / (-1458 - -30)
-            //            scale = scale * 2
-            print("scale: \(scale)")
-            node.setScale(scale)
-        }
-        
-        enumerateChildNodes(withName: "rigthLane") {
-            node, _ in
-            
-            if !self.isAlive {
-                node.removeAllActions()
-            }
-            
-            print("node: \(node.position.y)")
-            
-            let dyObstacle = node.position.y - -30
-            print("dy: \(dyObstacle)")
-            print("dyMax: \(-1458 - -30)")
-            let scale = dyObstacle / (-1458 - -30)
-            //            scale = scale * 2
-            print("scale: \(scale)")
-            node.setScale(scale)
-        }
+        updateNodeScale(nodeType: .obstacle)
+        updateNodeScale(nodeType: .leftLane)
+        updateNodeScale(nodeType: .rightLane)
         
         // Update entities
         for entity in self.entities {
@@ -471,7 +444,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         if let selta = childNode(withName: "selta") {
             if queuedLaneChange {
-                print("laneChange")
                 selta.position.x = laneXCoord[currentLane]
                 queuedLaneChange = false
             }
