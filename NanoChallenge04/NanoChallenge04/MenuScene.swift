@@ -13,6 +13,19 @@ class MenuScene: SKScene {
 //    var playButton = SKSpriteNode()
 //    var configButton = SKSpriteNode()
 //    let playButtonTex = SKTexture(imageNamed: "play")
+
+    
+    override func sceneDidLoad() {
+        let hour = Calendar.current.component(.hour, from: Date())
+        
+        let background = SKSpriteNode(texture: SKTexture(imageNamed: "dia"))
+        background.zPosition = 0
+        if 18 <= hour || hour < 6{
+            background.texture = SKTexture(imageNamed: "noite")
+        }
+        
+        addChild(background)
+    }
     
     override func didMove(to view: SKView) {
         
@@ -37,15 +50,6 @@ class MenuScene: SKScene {
                     view.presentScene(scene)
                 }
             }
-            
-            if node.name == "config" {
-                if let view = view {
-                    let scene = GameScene.init(fileNamed: "GameScene")!
-                    scene.scaleMode = SKSceneScaleMode.aspectFill
-                    view.presentScene(scene)
-                }
-            }
-            
         }
     }
 }
