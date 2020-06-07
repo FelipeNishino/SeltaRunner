@@ -19,7 +19,7 @@ let obstaclePathPoints : [[CGPoint]] =
     [
         [CGPoint(x: -20, y: -71), CGPoint(x: 20, y: -71), CGPoint(x: 50, y: -71)],
         [CGPoint(x: -360, y: -1400), CGPoint(x: 14, y: -1400), CGPoint(x: 395, y: -1400)]
-    ]
+]
 let dyMax = obstaclePathPoints[1][0].y - obstaclePathPoints[0][0].y
 
 
@@ -106,9 +106,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if let lblLost = childNode(withName: "lblLost") {
             lblLost.removeFromParent()
         }
+        
+        enumerateChildNodes(withName: "leftLane") {
+            node, _ in
+            
+            
+            node.removeFromParent()
+        }
+        
+        enumerateChildNodes(withName: "rigthLane") {
+            node, _ in
+            
+            node.removeFromParent()
+        }
     }
     
-
+    
     
     func didBegin(_ contact: SKPhysicsContact) {
         let nodeA = contact.bodyA.node
@@ -145,6 +158,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             n.position = pos
             n.strokeColor = SKColor.green
             self.addChild(n)
+        }
+        
+        if pos.y > 600 {
+            spawnLaneNodes()
         }
     }
     
@@ -277,11 +294,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             obstacle.physicsBody?.contactTestBitMask = CollisionType.player.rawValue
             obstacle.physicsBody?.collisionBitMask = 0
             
+            
             obstacle.physicsBody?.affectedByGravity = false
             generatedNumbers.insert(lane)
             addChild(obstacle)
             
             let movement = SKAction.follow(obstaclePath.cgPath, asOffset: true, orientToPath: false, speed: 500)
+            movement.timingMode = .easeIn
+            movement.timingFunction = {
+                time in
+                return powf(time, 5)
+            }
             let sequence = SKAction.sequence([movement, .removeFromParent()])
             obstacle.run(sequence)
         }
@@ -289,10 +312,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func spawnLaneNodes() {
         let leftPath = UIBezierPath()
-//        let rightPath = UIBezierPath()
+        let rightPath = UIBezierPath()
         
-        leftPath.move(to: CGPoint(x: 0, y: -30))
+        leftPath.move(to: CGPoint(x: 0, y: -15))
         leftPath.addLine(to: CGPoint(x: -262, y: -1458))
+        
+        rightPath.move(to: CGPoint(x: 30, y: -15))
+        rightPath.addLine(to: CGPoint(x: 306, y: -1458))
         
         let leftLane = SKSpriteNode(imageNamed: "retangulinho2")
         leftLane.zPosition = 1
@@ -300,18 +326,41 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         leftLane.name = "leftLane"
         addChild(leftLane)
         
-        let movement = SKAction.follow(leftPath.cgPath, asOffset: true, orientToPath: false, speed: 500)
-        let sequence = SKAction.sequence([movement, .removeFromParent()])
-        leftLane.run(sequence)
+        let rightLane = SKSpriteNode(imageNamed: "retangulinho-invertido")
+        rightLane.zPosition = 1
+        rightLane.size = CGSize(width: 90, height: 229)
+        rightLane.name = "rigthLane"
+        addChild(rightLane)
+        
+        let leftMovement = SKAction.follow(leftPath.cgPath, asOffset: true, orientToPath: false, speed: 500)
+        leftMovement.timingMode = .easeIn
+        leftMovement.timingFunction = {
+            time in
+            return powf(time, 5)
+        }
+        
+        let leftSequence = SKAction.sequence([leftMovement, .removeFromParent()])
+        
+        let rightMovement = SKAction.follow(rightPath.cgPath, asOffset: true, orientToPath: false, speed: 500)
+        rightMovement.timingMode = .easeIn
+        rightMovement.timingFunction = {
+            time in
+            return powf(time, 5)
+        }
+        
+        let rightSequence = SKAction.sequence([rightMovement, .removeFromParent()])
+        
+        leftLane.run(leftSequence)
+        rightLane.run(rightSequence)
     }
     
     func configureMovement(_ moveStraight: Bool) {
         let path = UIBezierPath()
-
+        
         path.move(to: .zero)
-
+        
         path.addLine(to: CGPoint(x: -10000, y: 0))
-
+        
         let movement = SKAction.follow(path.cgPath, asOffset: true, orientToPath: true, speed: obstacleSpeed)
         let sequence = SKAction.sequence([movement, .removeFromParent()])
         run(sequence)
@@ -334,7 +383,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 lastObstacleSpawnTime = currentTime
             }
             
-            if currentTime - lastLaneSpawnTime > obstacleFrequency / 2 {
+            if currentTime - lastLaneSpawnTime > obstacleFrequency / 4 {
                 spawnLaneNodes()
                 lastLaneSpawnTime = currentTime
             }
@@ -362,27 +411,47 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let dyObstacle = node.position.y - obstaclePathPoints[0][0].y
             print("dy: \(dyObstacle)")
             print("dyMax: \(dyMax)")
-            var scale = dyObstacle / dyMax
+            let scale = dyObstacle / dyMax
             print(scale)
-            if scale < 0.15 {
-                scale = 0.15
-            }
-//            scale = scale * 2
-    
+            //            scale = scale * 2
+            
             node.setScale(scale)
         }
         
         enumerateChildNodes(withName: "leftLane") {
             node, _ in
             
-            let dyObstacle = node.position.y - -30
-            var scale = dyObstacle / (-1458 - -30)
-            if scale < 0.15 {
-                scale = 0.15
+            
+            if !self.isAlive {
+                node.removeAllActions()
             }
-//            scale = scale * 2
+            print("node: \(node.position.y)")
+            
+            let dyObstacle = node.position.y - -30
+            print("dy: \(dyObstacle)")
+            print("dyMax: \(-1458 - -30)")
+            let scale = dyObstacle / (-1458 - -30)
+            //            scale = scale * 2
+            print("scale: \(scale)")
             node.setScale(scale)
-
+        }
+        
+        enumerateChildNodes(withName: "rigthLane") {
+            node, _ in
+            
+            if !self.isAlive {
+                node.removeAllActions()
+            }
+            
+            print("node: \(node.position.y)")
+            
+            let dyObstacle = node.position.y - -30
+            print("dy: \(dyObstacle)")
+            print("dyMax: \(-1458 - -30)")
+            let scale = dyObstacle / (-1458 - -30)
+            //            scale = scale * 2
+            print("scale: \(scale)")
+            node.setScale(scale)
         }
         
         // Update entities
