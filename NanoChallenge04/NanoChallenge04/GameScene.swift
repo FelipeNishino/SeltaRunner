@@ -129,8 +129,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         let retryButton = SKSpriteNode(imageNamed: "play")
         retryButton.position = CGPoint(x: frame.midX, y: frame.midY)
-        retryButton.scale(to: CGSize(width: 200, height: 200))
         retryButton.name = "retry"
+        retryButton.zPosition = 999
         self.addChild(retryButton)
         
         print("capotou")
