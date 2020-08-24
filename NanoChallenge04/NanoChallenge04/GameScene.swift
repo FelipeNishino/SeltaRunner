@@ -76,6 +76,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         dados.carregarDados()
         
+        let background = SKSpriteNode(texture: SKTexture(imageNamed: "dia"))
+        background.position = CGPoint(x: 0, y: self.size.height / 4)
+        background.zPosition = 10
+        let hour = Calendar.current.component(.hour, from: Date())
+        
+        if  18 <= hour || hour < 6 {
+            background.texture = SKTexture(imageNamed: "noite")
+            fontColor = .white
+        }
+        
         let lblMarcha = SKLabelNode(text: "Mete marcha!")
         lblMarcha.position = CGPoint(x: 0, y: 130)
         lblMarcha.zPosition = 12
@@ -95,16 +105,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         lblStart.fontColor = fontColor
         lblStart.run(SKAction(named: "Countdown")!)
         addChild(lblStart)
-        
-        let background = SKSpriteNode(texture: SKTexture(imageNamed: "dia"))
-        background.position = CGPoint(x: 0, y: self.size.height / 4)
-        background.zPosition = 10
-        let hour = Calendar.current.component(.hour, from: Date())
-        
-        if  18 <= hour || hour < 6 {
-            background.texture = SKTexture(imageNamed: "noite")
-            fontColor = .white
-        }
         
         addChild(background)
         
@@ -200,7 +200,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         lblRecorde.zPosition = 11
         lblRecorde.position = CGPoint(x: 0, y: 580)
         addChild(lblRecorde)
-        
     }
     
     func touchDown(atPoint pos : CGPoint) {
