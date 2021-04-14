@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8B293CC42488265700A901E7 /* Dados.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B293CC32488265700A901E7 /* Dados.swift */; };
+		E20F50A12486F4210084D71E /* MenuScene.sks in Resources */ = {isa = PBXBuildFile; fileRef = E20F50A02486F4210084D71E /* MenuScene.sks */; };
+		E20F50A32486F44B0084D71E /* MenuScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20F50A22486F44B0084D71E /* MenuScene.swift */; };
 		E2CE75A32485845200847152 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2CE75A22485845200847152 /* AppDelegate.swift */; };
 		E2CE75A52485845200847152 /* GameScene.sks in Resources */ = {isa = PBXBuildFile; fileRef = E2CE75A42485845200847152 /* GameScene.sks */; };
 		E2CE75A72485845200847152 /* Actions.sks in Resources */ = {isa = PBXBuildFile; fileRef = E2CE75A62485845200847152 /* Actions.sks */; };
@@ -37,7 +40,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		E2CE759F2485845200847152 /* NanoChallenge04.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NanoChallenge04.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8B293CC32488265700A901E7 /* Dados.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dados.swift; sourceTree = "<group>"; };
+		E20F50A02486F4210084D71E /* MenuScene.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = MenuScene.sks; sourceTree = "<group>"; };
+		E20F50A22486F44B0084D71E /* MenuScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuScene.swift; sourceTree = "<group>"; };
+		E2CE759F2485845200847152 /* Selta Runner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Selta Runner.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E2CE75A22485845200847152 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		E2CE75A42485845200847152 /* GameScene.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = GameScene.sks; sourceTree = "<group>"; };
 		E2CE75A62485845200847152 /* Actions.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = Actions.sks; sourceTree = "<group>"; };
@@ -93,7 +99,7 @@
 		E2CE75A02485845200847152 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				E2CE759F2485845200847152 /* NanoChallenge04.app */,
+				E2CE759F2485845200847152 /* Selta Runner.app */,
 				E2CE75B92485845400847152 /* NanoChallenge04Tests.xctest */,
 				E2CE75C42485845400847152 /* NanoChallenge04UITests.xctest */,
 			);
@@ -112,6 +118,9 @@
 				E2CE75AF2485845400847152 /* Assets.xcassets */,
 				E2CE75B12485845400847152 /* LaunchScreen.storyboard */,
 				E2CE75B42485845400847152 /* Info.plist */,
+				E20F50A02486F4210084D71E /* MenuScene.sks */,
+				E20F50A22486F44B0084D71E /* MenuScene.swift */,
+				8B293CC32488265700A901E7 /* Dados.swift */,
 			);
 			path = NanoChallenge04;
 			sourceTree = "<group>";
@@ -151,7 +160,7 @@
 			);
 			name = NanoChallenge04;
 			productName = NanoChallenge04;
-			productReference = E2CE759F2485845200847152 /* NanoChallenge04.app */;
+			productReference = E2CE759F2485845200847152 /* Selta Runner.app */;
 			productType = "com.apple.product-type.application";
 		};
 		E2CE75B82485845400847152 /* NanoChallenge04Tests */ = {
@@ -239,6 +248,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E2CE75AE2485845200847152 /* Main.storyboard in Resources */,
+				E20F50A12486F4210084D71E /* MenuScene.sks in Resources */,
 				E2CE75A52485845200847152 /* GameScene.sks in Resources */,
 				E2CE75B02485845400847152 /* Assets.xcassets in Resources */,
 				E2CE75B32485845400847152 /* LaunchScreen.storyboard in Resources */,
@@ -268,8 +278,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				E2CE75A92485845200847152 /* GameScene.swift in Sources */,
+				E20F50A32486F44B0084D71E /* MenuScene.swift in Sources */,
 				E2CE75AB2485845200847152 /* GameViewController.swift in Sources */,
 				E2CE75A32485845200847152 /* AppDelegate.swift in Sources */,
+				8B293CC42488265700A901E7 /* Dados.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -443,6 +455,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 92FPV96TF2;
 				INFOPLIST_FILE = NanoChallenge04/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.5;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -450,7 +463,7 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = Grupo14.NanoChallenge04;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "Selta Runner";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -461,6 +474,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 92FPV96TF2;
 				INFOPLIST_FILE = NanoChallenge04/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.5;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -468,7 +482,7 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = Grupo14.NanoChallenge04;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "Selta Runner";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

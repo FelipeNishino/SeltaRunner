@@ -16,6 +16,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        
+        
+//        let domain = Bundle.main.bundleIdentifier!
+//        UserDefaults.standard.removePersistentDomain(forName: domain)
+//        UserDefaults.standard.synchronize()
+        
+        if UserDefaults.standard.value(forKey: "Dados") == nil {
+           
+            let dados: [String:String] = ["Creditos":"0", "Recorde":"0", "Upgrade":"0"]
+
+            UserDefaults.standard.setValue(dados, forKey: "Dados")
+        }
+        
+        
         return true
     }
 
